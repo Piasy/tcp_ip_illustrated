@@ -1,8 +1,8 @@
 package main
 
 import (
-    "net"
     "fmt"
+    "os"
 
     "math/rand"
 
@@ -13,46 +13,25 @@ import (
 )
 
 func main() {
-    localAddr, err := net.ResolveIPAddr("ip4", "0.0.0.0")
-    if err != nil {
-        panic(err)
-    }
+    conn := utils.DialIP("icmp", "0.0.0.0", os.Args[1])
 
-    remoteAddr, err := net.ResolveIPAddr("ip4", "www.baidu.com")
-    if err != nil {
-        panic(err)
-    }
+    body := icmp.Echo{ID: rand.Intn(65536), Seq: 0, Data: []byte("Hello from Piasy :)")}
+    message := icmp.Message{Type: ipv4.ICMPTypeEcho, Code: 0, Body: &body}
 
-    conn, err := net.DialIP("ip4:icmp", localAddr, remoteAddr)
-    if err != nil {
-        panic(err)
-    }
+    utils.SendIcmpPacket(conn, &message)
 
-    echoBody := icmp.Echo{ID: rand.Intn(65536), Seq: 0, Data: []byte("Hello from Piasy :)")}
-    echoMessage := icmp.Message{Type: ipv4.ICMPTypeEcho, Code: 0, Body: &echoBody}
-
-    writeBuf, err := echoMessage.Marshal(nil)
-    if err != nil {
-        panic(err)
-    }
-
-    _, err = conn.Write(writeBuf)
-    if err != nil {
-        panic(err)
-    }
-
-    fmt.Printf("send ICMP, %s\n", utils.PrintIcmpPacket(&echoMessage))
+    fmt.Printf("send ICMP, %s\n", utils.PrintIcmpPacket(&message))
 
     readBuf := make([]byte, 1024)
-    _, _, err = conn.ReadFrom(readBuf)
+    _, _, err := conn.ReadFrom(readBuf)
     if err != nil {
         panic(err)
     }
 
-    echoReply, err := icmp.ParseMessage(ipv4.ICMPTypeEchoReply.Protocol(), readBuf)
+    reply, err := icmp.ParseMessage(ipv4.ICMPTypeEchoReply.Protocol(), readBuf)
     if err != nil {
         panic(err)
     }
 
-    fmt.Println("receive ICMP,", utils.PrintIcmpPacket(echoReply))
+    fmt.Println("receive ICMP,", utils.PrintIcmpPacket(reply))
 }
