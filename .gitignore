@@ -1,3 +1,4 @@
 /.idea
 
+/icmp/icmp_echo
 /icmp/icmp_receiver

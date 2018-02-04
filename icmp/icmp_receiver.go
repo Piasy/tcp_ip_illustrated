@@ -6,34 +6,34 @@ import (
 
     "golang.org/x/net/ipv4"
     "golang.org/x/net/icmp"
+
+    "github.com/Piasy/tcp_ip_illustrated/utils"
 )
 
 func main() {
-    addr, _ := net.ResolveIPAddr("ip4", "0.0.0.0")
-    conn, _ := net.ListenIP("ip4:icmp", addr)
+    addr, err := net.ResolveIPAddr("ip4", "0.0.0.0")
+    if err != nil {
+        panic(err)
+    }
+
+    conn, err := net.ListenIP("ip4:icmp", addr)
+    if err != nil {
+        panic(err)
+    }
 
     buf := make([]byte, 1024)
 
     for ; ; {
-        _, _, err := conn.ReadFrom(buf)
+        _, _, err = conn.ReadFrom(buf)
         if err != nil {
-            fmt.Printf("Error: %#v\n", err)
-            break
+            panic(err)
         }
 
         packet, err := icmp.ParseMessage(ipv4.ICMPType(0).Protocol(), buf)
         if err != nil {
-            fmt.Printf("Error: %#v\n", err)
-            break
+            panic(err)
         }
 
-        fmt.Printf("receive ICMP, type:%v, code:%d, checksum:%d, ", packet.Type, packet.Code, packet.Checksum)
-
-        echo, ok := packet.Body.(*icmp.Echo)
-        if ok {
-            fmt.Printf("id:%d, seq:%d\n", echo.ID, echo.Seq)
-        } else {
-            fmt.Print("\n")
-        }
+        fmt.Println("receive ICMP,", utils.PrintIcmpPacket(packet))
     }
 }
